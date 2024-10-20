@@ -1,6 +1,5 @@
 <template>
   <div class="container-fluid bg-dark min-vh-100">
-    <!-- <div class="container bg-dark min-vh-100"> -->
     <div class="row justify-content-center bg-gradient">
       <div class="col-6 text-center card-img">
         <img src="/images/Pokemon-logo.png" alt="Pokemon-logo" />
@@ -10,11 +9,22 @@
       <div class="col-6 mt-5">
         <input
           type="text"
+          id="search"
           placeholder="search pokemon"
           class="form-control"
           v-model="searchQuery"
           @input="searchPokemon"
         />
+        <div class="text-white mt-3">
+          suggestion:
+          <span
+            class="suggested-pokemon"
+            @click="viewDetailPokemon(pokemon.name)"
+            v-for="pokemon in suggestedPokemon"
+          >
+            {{ pokemon.name }} |
+          </span>
+        </div>
       </div>
     </div>
     <div class="content m-5 mb-0">
@@ -62,39 +72,30 @@
               </h1>
               <span>
                 Type:
-                <!-- <Text v-for="detail in selectedPokemon.types">
-                  {{ detail.type.name }}
-                </Text> -->
-                <Text>
-                  {{
-                    selectedPokemon.types
-                      .map((detail) => detail.type.name)
-                      .join(', ')
-                  }}
-                </Text> </span
+                {{
+                  selectedPokemon.types
+                    .map((detail) => detail.type.name)
+                    .join(', ')
+                }} </span
               ><br />
               <span>
                 Skills:
-                <Text>
-                  {{
-                    selectedPokemon.moves
-                      .map((detail) => detail.move.name)
-                      .join(', ')
-                  }}
-                </Text>
+
+                {{
+                  selectedPokemon.moves
+                    .map((detail) => detail.move.name)
+                    .join(', ')
+                }}
               </span>
             </div>
           </div>
         </div>
       </div>
     </div>
-    <!-- </div> -->
   </div>
 </template>
 
 <script>
-import { Text } from 'vue';
-
 export default {
   data() {
     return {
@@ -102,6 +103,8 @@ export default {
       pokemonList: [],
       viewDetail: false,
       selectedPokemon: '',
+      pokemonGen1: [],
+      suggestedPokemon: '',
     };
   },
   methods: {
@@ -111,9 +114,9 @@ export default {
           'https://pokeapi.co/api/v2/pokemon?limit=30'
         );
         const data = await response.json();
-        const results = data.results;
+        const result = data.results;
 
-        results.forEach(this.getEachPokemon);
+        result.forEach(this.getEachPokemon);
       } catch (error) {
         console.error('Error fetching data:', error);
       }
@@ -127,9 +130,6 @@ export default {
       this.pokemonList.push(data);
       this.pokemonList.sort((a, b) => a.id - b.id);
     },
-    searchPokemon() {
-      console.log(`Searching for: ${this.searchQuery}`);
-    },
     async viewDetailPokemon(pokemonName) {
       this.viewDetail = true;
       const response = await fetch(
@@ -139,15 +139,38 @@ export default {
       console.log(data);
       this.selectedPokemon = data;
     },
+    async getPokemonGen1() {
+      const response = await fetch(
+        'https://pokeapi.co/api/v2/pokemon?limit=151'
+      );
+      const data = await response.json();
+      const result = data.results;
+
+      this.pokemonGen1 = result;
+    },
+  },
+  watch: {
+    searchQuery() {
+      if (this.searchQuery === '') {
+        this.suggestedPokemon = '';
+      } else {
+        const filteredPokemon = this.pokemonGen1.filter((pokemon) => {
+          return pokemon.name.includes(this.searchQuery);
+        });
+        this.suggestedPokemon = filteredPokemon.slice(0, 3);
+      }
+    },
   },
   mounted() {
     this.getListPokemon();
+    this.getPokemonGen1();
   },
 };
 </script>
 
 <style scoped>
-.card {
+.card,
+.suggested-pokemon {
   cursor: pointer;
 }
 </style>
